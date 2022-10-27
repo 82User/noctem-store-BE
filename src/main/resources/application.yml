@@ -1,0 +1,92 @@
+server:
+  port: 0 # dev: 50003
+  servlet:
+    encoding:
+      charset: UTF-8
+      enable: true
+      force: true
+  shutdown: graceful
+
+spring:
+  application:
+    name: ${STORE_SERVICE}
+  config:
+    import: optional:configserver:http://${CONFIG_SERVER}:8888
+  profiles:
+    active: ${PROFILE}
+  cloud:
+    config:
+      fail-fast: true
+    bus:
+      enabled: true
+      refresh:
+        enabled: true
+      destination: config-topic
+  kafka:
+    bootstrap-servers: http://${KAFKA_SERVER}:9092
+    consumer:
+      group-id: storeGroup
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+  datasource-store:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    jdbc-url: jdbc:mysql://${MYSQL_SERVER}:3306/store?characterEncoding=UTF-8&serverTimezone=Asia/Seoul
+    username: ${NOCTEM_DB_USERNAME}
+    password: ${NOCTEM_DB_PASSWORD}
+    hbm2ddl.auto: none
+  datasource-purchase:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    jdbc-url: jdbc:mysql://${MYSQL_SERVER}:3306/purchase?characterEncoding=UTF-8&serverTimezone=Asia/Seoul
+    username: ${NOCTEM_DB_READ_ONLY_USERNAME}
+    password: ${NOCTEM_DB_READ_ONLY_PASSWORD}
+    hbm2ddl.auto: none
+  jpa:
+    properties:
+      hibernate:
+        format_sql: true
+        query.in_clause_parameter_padding: true
+    database: mysql
+    database-platform: org.hibernate.dialect.MySQL8Dialect
+  #    hibernate.ddl-auto: update
+  redis:
+    host: ${REDIS_SERVER}
+    port: 6379
+
+eureka:
+  instance:
+    instance-id: ${spring.cloud.client.hostname}:${spring.application.instance_id:${random.value}}
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://${EUREKA_SERVER}:8761/eureka
+
+management:
+  endpoints:
+    web:
+      base-path: /api/${STORE_SERVICE}/actuator
+      exposure:
+        include: health, refresh, httptrace, busrefresh, prometheus, metrics
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: ${spring.application.name}
+
+logging:
+  charset:
+    console: UTF-8
+    file: UTF-8
+  level:
+    root: info
+
+global:
+  jwt-token:
+    signer: ${NOCTEM_JWT_SIGNER}
+  api:
+    base-path: /api/${STORE_SERVICE}
+  value: local-store
